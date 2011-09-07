@@ -1,5 +1,4 @@
-fbconsole
-=========
+# fbconsole #
 
 fbconsole is a small facebook api client for use in python scripts.
 
@@ -8,17 +7,16 @@ You can install fbconsole using pip:
     pip install fbconsole
 
 
-Quick Start Guide
------------------
+## Quick Start Guide ##
 
-**Authentication**
+
+### Authentication ###
 
 For many api calls, you will need to authenticate your script with Facebook.
 fbconsole makes this easy by providing an `authenticate` function.  If your
 script needs extended permissions, for example to post a status update, you can
 specify which extended permissions to request with the AUTH_SCOPE setting.  For
 example:
-
 
     import fbconsole
 
@@ -32,7 +30,9 @@ During the authentication process, a browser window will be opened where you can
 enter in your facebook login credentials.  After logging in, you can close the
 browser window.  Your script will continue executing in the background.
 
-**Graph API Basics**
+
+### Graph API Basics ###
+
 
 You can make HTTP POST requests using the `post` function.  Here is how
 you would update your status:
@@ -60,3 +60,48 @@ Finally, you can also make
     friends = fbconsole.fql("SELECT name FROM user WHERE uid IN "
                             "(SELECT uid2 FROM friend WHERE uid1 = me())")
 
+
+### More Authentication Options ###
+
+By default, fbconsole will make all it's requests as the fbconsole facebook app.
+If you want the requests to be made by your own facebook application, you must
+modify the APP_ID setting.  For example:
+
+    fbconsole.APP_ID = '<your-app-id>'
+    fbconsole.authenticate()
+
+For the authentication flow to work, you must configure your Facebook
+application correctly by setting the "Site URL" option to http://127.0.0.1:8080
+
+If you don't want to change your application settings, you can also specify an
+access token to use directly, in which case you can skip authentication
+altogether:
+
+    fbconsole.ACCESS_TOKEN = '<your-access-token>'
+
+
+### Other Options ###
+
+There are two other options you can specify.
+
+- `SERVER_PORT` controls which port the local server runs on.  If you modify
+     this, make sure your applications settings on Facebook, specifically "Site
+     URL", reflect the port number you are using.  The default is 8080.
+
+- `ACCESS_TOKEN_FILE` controls where the access token gets stored on the file
+  system.  The default is `.fb_access_token`.
+
+
+## Feedback ##
+
+For issues pertaining to fbconsole only, use
+[the issue tracker on github](https://github.com/facebook/fbconsole/issues).
+For issues with the graph api or other aspects of Facebook's platform, please
+refer to [the developer docs](https://developers.facebook.com/docs/) and
+[the Facebook Platform bug tracker](http://bugs.developers.facebook.net/).
+
+
+## License Information ##
+
+fbconsole is licensed under the [Apache License, Version
+2.0](http://www.apache.org/licenses/LICENSE-2.0.html)

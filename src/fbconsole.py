@@ -33,9 +33,8 @@ from pprint import pprint
 
 APP_ID = '179745182062082'
 SERVER_PORT = 8080
-REDIRECT_URI = 'http://127.0.0.1:%s/' % SERVER_PORT
 ACCESS_TOKEN = None
-LOCAL_FILE = '.fb_access_token'
+ACCESS_TOKEN_FILE = '.fb_access_token'
 AUTH_SCOPE = []
 
 __all__ = [
@@ -50,7 +49,7 @@ __all__ = [
     'SERVER_PORT',
     'ACCESS_TOKEN',
     'AUTH_SCOPE',
-    'LOCAL_FILE']
+    'ACCESS_TOKEN_FILE']
 
 def _get_url(path, args=None, graph=True):
     args = args or {}
@@ -126,7 +125,7 @@ class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if ACCESS_TOKEN:
             data = {'scope': AUTH_SCOPE,
                     'access_token': ACCESS_TOKEN}
-            open(LOCAL_FILE,'w').write(json.dumps(data))
+            open(ACCESS_TOKEN_FILE,'w').write(json.dumps(data))
             self.wfile.write("You have successfully logged in to facebook with fbconsole. "
                              "You can close this window now.")
         else:
@@ -159,8 +158,8 @@ def authenticate():
     """
     global ACCESS_TOKEN
     needs_auth = True
-    if os.path.exists(LOCAL_FILE):
-        data = json.loads(open(LOCAL_FILE).read())
+    if os.path.exists(ACCESS_TOKEN_FILE):
+        data = json.loads(open(ACCESS_TOKEN_FILE).read())
         if set(data['scope']).issuperset(AUTH_SCOPE):
             ACCESS_TOKEN = data['access_token']
             needs_auth = False
@@ -169,7 +168,7 @@ def authenticate():
         print "Logging you in to facebook..."
         webbrowser.open('https://www.facebook.com/dialog/oauth?' +
                         urlencode({'client_id':APP_ID,
-                                   'redirect_uri':REDIRECT_URI,
+                                   'redirect_uri':'http://127.0.0.1:%s/' % SERVER_PORT,
                                    'response_type':'token',
                                    'scope':','.join(AUTH_SCOPE)}))
 
