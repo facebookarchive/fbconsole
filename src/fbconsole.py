@@ -14,18 +14,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os.path
-import os
-import stat
-import json
-import urllib2
 import BaseHTTPServer
-import webbrowser
+import cookielib
 import httplib
+import json
 import mimetools
 import mimetypes
-import cookielib
+import os
+import os.path
+import stat
+import time
 import types
+import urllib2
+import webbrowser
 
 from urlparse import urlparse, parse_qs
 from urllib import urlencode
@@ -125,6 +126,13 @@ class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if ACCESS_TOKEN:
             data = {'scope': AUTH_SCOPE,
                     'access_token': ACCESS_TOKEN}
+            expiration = params.get('expires_in', [None])[0]
+            if expiration:
+                if expiration == '0':
+                    # this is what's returned when offline_access is requested
+                    data['expires_at'] = 'never'
+                else:
+                    data['expires_at'] = int(time.time()+int(expiration))
             open(ACCESS_TOKEN_FILE,'w').write(json.dumps(data))
             self.wfile.write("You have successfully logged in to facebook with fbconsole. "
                              "You can close this window now.")
@@ -160,7 +168,9 @@ def authenticate():
     needs_auth = True
     if os.path.exists(ACCESS_TOKEN_FILE):
         data = json.loads(open(ACCESS_TOKEN_FILE).read())
-        if set(data['scope']).issuperset(AUTH_SCOPE):
+        expires_at = data.get('expires_at')
+        still_valid = expires_at and (expires_at == 'never' or expires_at > time.time())
+        if still_valid and set(data['scope']).issuperset(AUTH_SCOPE):
             ACCESS_TOKEN = data['access_token']
             needs_auth = False
 
