@@ -30,6 +30,12 @@ During the authentication process, a browser window will be opened where you can
 enter in your facebook login credentials.  After logging in, you can close the
 browser window.  Your script will continue executing in the background.
 
+The access token used for authentication will be stored in a file, so the next
+time your script is run, the `authenticate()` function won't have to do anything.
+To remove this access token, you can call `logout()`:
+
+    fbconsole.logout()
+
 
 ### Graph API Basics ###
 

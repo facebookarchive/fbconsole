@@ -147,8 +147,9 @@ def help():
 The following commands are available:
 
 help() - display this help message
-authenticate() - authenticate with facebook.  Optionally provide list
-                         of permissions to request
+authenticate() - authenticate with facebook.
+logout() - Remove the cached access token, forcing authenticate() to get a new
+           access token
 get(path, params) - call the graph api with the given path and query parameters
 post(path, data) - post data to the graph api with the given path
 delete(path, params) - send a delete request
@@ -185,6 +186,11 @@ def authenticate():
         httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', SERVER_PORT), _RequestHandler)
         while ACCESS_TOKEN is None:
             httpd.handle_request()
+
+def logout():
+    """Logout of facebook.  This just removes the cached access token."""
+    if os.path.exists(ACCESS_TOKEN_FILE):
+        os.remove(ACCESS_TOKEN_FILE)
 
 def get(path, params=None):
     """Send a GET request to the graph api.
