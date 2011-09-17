@@ -1,1 +1,5 @@
 src/fbconsole.egg-info
+env/
+dist/
+README.html
+.fb_access_token
