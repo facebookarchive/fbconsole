@@ -41,6 +41,7 @@ AUTH_SCOPE = []
 __all__ = [
     'help',
     'authenticate',
+    'logout',
     'get',
     'post',
     'delete',
@@ -56,7 +57,12 @@ def _get_url(path, args=None, graph=True):
     args = args or {}
     if ACCESS_TOKEN:
         args['access_token'] = ACCESS_TOKEN
-    subdomain = 'graph' if graph else 'api'
+    if graph:
+        subdomain = 'graph'
+        if '/videos' in path:
+            subdomain = 'graph-video'
+    else:
+        subdomain = 'graph' if graph else 'api'
     if 'access_token' in args or 'client_secret' in args:
         endpoint = "https://%s.facebook.com" % subdomain
     else:
