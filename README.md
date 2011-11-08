@@ -68,17 +68,22 @@ would delete a status message:
 
     fbconsole.delete('/'+status['id'])
 
-To upload a photo, you can profile a file-like object as a post parameter:
+To upload a photo, you can provide a file-like object as a post parameter:
 
     fbconsole.post('/me/photos', {'source':open('my-photo.jpg')})
 
-Finally, you can also make
+You can also make
 [FQL](https://developers.facebook.com/docs/reference/fql/) queries using the
 `fql` function.  For example:
 
     friends = fbconsole.fql("SELECT name FROM user WHERE uid IN "
                             "(SELECT uid2 FROM friend WHERE uid1 = me())")
 
+If you just want a url to a particular graph api, for example to download a
+profile picture, you can use the `graph_url` function:
+
+    profile_pic = graph_url('/zuck/picture')
+    urlretrieve(profile_pic, 'zuck.jpg')
 
 ### More Authentication Options ###
 

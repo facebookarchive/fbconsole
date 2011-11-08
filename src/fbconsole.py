@@ -42,6 +42,7 @@ __all__ = [
     'help',
     'authenticate',
     'logout',
+    'graph_url',
     'get',
     'post',
     'delete',
@@ -156,6 +157,7 @@ help() - display this help message
 authenticate() - authenticate with facebook.
 logout() - Remove the cached access token, forcing authenticate() to get a new
            access token
+graph_url(path, params) - get the full url to a graph api path
 get(path, params) - call the graph api with the given path and query parameters
 post(path, data) - post data to the graph api with the given path
 delete(path, params) - send a delete request
@@ -197,6 +199,20 @@ def logout():
     """Logout of facebook.  This just removes the cached access token."""
     if os.path.exists(ACCESS_TOKEN_FILE):
         os.remove(ACCESS_TOKEN_FILE)
+
+def graph_url(path, params=None):
+    """Get the full url to the graph api for the given path and query args.
+
+    This is useful if you want to use your own method of making http requests or
+    are not interested in the json parsing that occurs by default. For example,
+    download a large profile picture of Mark Zuckerberg:
+
+      >>> url = graph_url('/zuck/picture', {"type":"large"})
+      >>> import urllib
+      >>> urllib.urlretrieve(url, 'mark.jpg')
+
+    """
+    return _get_url(path, args=params)
 
 def get(path, params=None):
     """Send a GET request to the graph api.
