@@ -26,6 +26,7 @@ import stat
 import time
 import types
 import urllib2
+import urllib
 import webbrowser
 
 from urlparse import urlparse, parse_qs
@@ -208,8 +209,7 @@ def graph_url(path, params=None):
     download a large profile picture of Mark Zuckerberg:
 
       >>> url = graph_url('/zuck/picture', {"type":"large"})
-      >>> import urllib
-      >>> urllib.urlretrieve(url, 'mark.jpg')
+      >>> filename, response = urllib.urlretrieve(url, 'mark.jpg')
 
     """
     return _get_url(path, args=params)
@@ -219,8 +219,12 @@ def get(path, params=None):
 
     For example:
 
-      >>> get('/me')
-      >>> get('/me', {'fields':'id,name'})
+      >>> user = get('/me')
+      >>> print user['first_name']
+      David
+      >>> short_user = get('/me', {'fields':'id,first_name'})
+      >>> print short_user['id'], short_user['first_name']
+      100003169144448 David
 
     """
     return json.load(urllib2.urlopen(_get_url(path, args=params)))
@@ -230,9 +234,11 @@ def post(path, params=None):
 
     You can also upload files using this function.  For example:
 
-      >>> post('/me/photos',
+      >>> photo_id = post('/me/photos',
       ...            {'name': 'My Photo',
-      ...             'source': open("myphoto.jpg")})
+      ...             'source': open("icon.gif")})['id']
+      >>> print get('/'+photo_id)['name']
+      My Photo
 
     """
     opener = urllib2.build_opener(
@@ -247,6 +253,7 @@ def delete(path, params=None):
 
       >>> msg_id = post('/me/feed', {'message':'hello world'})['id']
       >>> delete('/'+msg_id)
+      True
 
     """
     if not params:
@@ -260,6 +267,7 @@ def fql(query):
     For example:
 
       >>> fql('SELECT name FROM user WHERE uid = me()')
+      [{u'name': u'David Amcafiaddddh Yangstein'}]
 
     """
     url = _get_url('/method/fql.query',
@@ -290,6 +298,13 @@ def shell():
     except ImportError:
         import code
         code.InteractiveConsole(globals()).interact(INTRO_MESSAGE)
+
+
+def test_suite():
+    import doctest
+    global ACCESS_TOKEN
+    ACCESS_TOKEN = 'AAACjeiZB6FgIBAB8eZABg7So8ALDisFLugfIJSZCg3FEDRy82yEmdXYYfNvdv2kWVMWxaJgWqqVMPtG5v5n4lMG5VXmZBZBykQkeluhpFPQZDZD'
+    return doctest.DocTestSuite()
 
 if __name__ == '__main__':
     shell()

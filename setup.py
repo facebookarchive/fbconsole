@@ -38,6 +38,7 @@ setup(
         'Operating System :: OS Independent',
         'Topic :: Utilities',
         ],
+    test_suite = "fbconsole.test_suite",
     entry_points = """
       [console_scripts]
       fbconsole = fbconsole:shell
