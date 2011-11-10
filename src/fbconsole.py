@@ -49,6 +49,7 @@ __all__ = [
     'delete',
     'shell',
     'fql',
+    'iter_pages',
     'APP_ID',
     'SERVER_PORT',
     'ACCESS_TOKEN',
@@ -228,6 +229,32 @@ def get(path, params=None):
 
     """
     return json.load(urllib2.urlopen(_get_url(path, args=params)))
+
+def iter_pages(json_response):
+    """Iterate over multiple pages of data.
+
+    The graph api can return a lot of data, but will only return so much data in
+    a single request.  To get more data, you must query for it explicitly using
+    paging.  This function will do automatic paging in the form of an iterator.
+    For example to print the id of every photo tagged with the logged in user:
+
+      >>> total = 0
+      >>> for photo in iter_pages(get('/19292868552/feed', {'limit':2})):
+      ...     total += 1
+      ...     print "There are at least", total, "feed stories"
+      ...     if total > 4: break
+      There are at least 1 feed stories
+      There are at least 2 feed stories
+      There are at least 3 feed stories
+      There are at least 4 feed stories
+      There are at least 5 feed stories
+
+    """
+    while len(json_response.get('data','')):
+        for item in json_response['data']:
+            yield item
+        next_url = json_response['paging']['next']
+        json_response = json.load(urllib2.urlopen(next_url))
 
 def post(path, params=None):
     """Send a POST request to the graph api.
