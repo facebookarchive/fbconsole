@@ -28,7 +28,7 @@ setup(
         'fbconsole',
     ],
     license="Apache 2.0",
-    install_requires=[],
+    install_requires=['poster'],
     zip_safe=True,
     classifiers=[
         'Development Status :: 3 - Alpha',

@@ -28,6 +28,17 @@ import types
 import urllib2
 import urllib
 import webbrowser
+import StringIO
+
+poster_is_available = False
+try:
+    # try to use poster if it is available
+    import poster.streaminghttp
+    import poster.encode
+    poster.streaminghttp.register_openers()
+    poster_is_available = True
+except ImportError:
+    pass # we can live without this.
 
 from urlparse import urlparse, parse_qs
 from urllib import urlencode
@@ -268,10 +279,15 @@ def post(path, params=None):
       My Photo
 
     """
-    opener = urllib2.build_opener(
-        urllib2.HTTPCookieProcessor(cookielib.CookieJar()),
-        _MultipartPostHandler)
-    return json.load(opener.open(_get_url(path), params))
+    if poster_is_available:
+        data, headers = poster.encode.multipart_encode(params)
+        request = urllib2.Request(_get_url(path), data, headers)
+        return json.load(urllib2.urlopen(request))
+    else:
+        opener = urllib2.build_opener(
+            urllib2.HTTPCookieProcessor(cookielib.CookieJar()),
+            _MultipartPostHandler)
+        return json.load(opener.open(_get_url(path), params))
 
 def delete(path, params=None):
     """Send a DELETE request to the graph api.
