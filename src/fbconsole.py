@@ -50,6 +50,11 @@ ACCESS_TOKEN = None
 ACCESS_TOKEN_FILE = '.fb_access_token'
 AUTH_SCOPE = []
 
+AUTH_SUCCESS_HTML = """
+You have successfully logged in to facebook with fbconsole.
+You can close this window now.
+"""
+
 __all__ = [
     'help',
     'authenticate',
@@ -151,8 +156,7 @@ class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 else:
                     data['expires_at'] = int(time.time()+int(expiration))
             open(ACCESS_TOKEN_FILE,'w').write(json.dumps(data))
-            self.wfile.write("You have successfully logged in to facebook with fbconsole. "
-                             "You can close this window now.")
+            self.wfile.write(AUTH_SUCCESS_HTML)
         else:
             self.wfile.write('<html><head>'
                              '<script>location = "?"+location.hash.slice(1);</script>'
@@ -178,7 +182,7 @@ def authenticate():
     """Authenticate with facebook so you can make api calls that require auth.
 
     Alternatively you can just set the ACCESS_TOKEN global variable in this
-    module to an access token you get from facebook.
+    module to set an access token you get from facebook.
 
     If you want to request certain permissions, set the AUTH_SCOPE global
     variable to the list of permissions you want.
@@ -194,7 +198,6 @@ def authenticate():
             needs_auth = False
 
     if needs_auth:
-        print "Logging you in to facebook..."
         webbrowser.open('https://www.facebook.com/dialog/oauth?' +
                         urlencode({'client_id':APP_ID,
                                    'redirect_uri':'http://127.0.0.1:%s/' % SERVER_PORT,

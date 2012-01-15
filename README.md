@@ -27,9 +27,10 @@ running code downloaded from the internet like this.
 
 For many api calls, you will need to authenticate your script with Facebook.
 fbconsole makes this easy by providing an `authenticate` function.  If your
-script needs extended permissions, for example to post a status update, you can
-specify which extended permissions to request with the AUTH_SCOPE setting.  For
-example:
+script needs
+[extended permissions](https://developers.facebook.com/docs/reference/api/permissions/),
+for example to post a status update, you can specify which extended permissions
+to request with the AUTH_SCOPE setting.  For example:
 
     import fbconsole
 
@@ -114,6 +115,9 @@ There are two other options you can specify.
 
 - `ACCESS_TOKEN_FILE` controls where the access token gets stored on the file
   system.  The default is `.fb_access_token`.
+
+- `AUTH_SUCCESS_HTML` is the html page content displayed to the user in their browser
+  window once they have successfully authenticated.
 
 
 ## Feedback ##
