@@ -67,16 +67,13 @@ __all__ = [
     'AUTH_SCOPE',
     'ACCESS_TOKEN_FILE']
 
-def _get_url(path, args=None, graph=True):
+def _get_url(path, args=None):
     args = args or {}
     if ACCESS_TOKEN:
         args['access_token'] = ACCESS_TOKEN
-    if graph:
-        subdomain = 'graph'
-        if '/videos' in path:
-            subdomain = 'graph-video'
-    else:
-        subdomain = 'graph' if graph else 'api'
+    subdomain = 'graph'
+    if '/videos' in path:
+        subdomain = 'graph-video'
     if 'access_token' in args or 'client_secret' in args:
         endpoint = "https://%s.facebook.com" % subdomain
     else:
@@ -313,10 +310,8 @@ def fql(query):
       [{u'name': u'David Amcafiaddddh Yangstein'}]
 
     """
-    url = _get_url('/method/fql.query',
-                   args={'query': query, 'format': 'json'},
-                   graph=False)
-    return json.load(urllib2.urlopen(url))
+    url = _get_url('/fql', args={'q': query})
+    return json.load(urllib2.urlopen(url))['data']
 
 INTRO_MESSAGE = '''\
   __ _                                _
