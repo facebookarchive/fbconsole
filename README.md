@@ -86,6 +86,24 @@ profile picture, you can use the `graph_url` function:
     profile_pic = graph_url('/zuck/picture')
     urlretrieve(profile_pic, 'zuck.jpg')
 
+
+### Advanced Graph API ###
+
+fbconsole also provides access and utilities around some more advanced graph api
+features.
+
+
+__iter_pages__
+
+If you are trying to fetch a lot of data, you may be required to make multiple
+requests to the graph api via the "paging" values that are sent back.  You can
+use `iter_pages` to automatically iterate through multiple requests.  For
+example, you can iterate through all your wall posts:
+
+    for post in iter_pages(fbconsole.get('/me/posts')):
+        print post['message']
+
+
 ### More Authentication Options ###
 
 By default, fbconsole will make all it's requests as the fbconsole facebook app.

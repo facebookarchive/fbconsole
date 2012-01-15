@@ -244,10 +244,11 @@ def get(path, params=None):
 def iter_pages(json_response):
     """Iterate over multiple pages of data.
 
-    The graph api can return a lot of data, but will only return so much data in
-    a single request.  To get more data, you must query for it explicitly using
-    paging.  This function will do automatic paging in the form of an iterator.
-    For example to print the id of every photo tagged with the logged in user:
+    The graph api can return a lot of data, but will only return a limited
+    amount of data in a single request.  To get more data, you must query for it
+    explicitly using paging.  This function will do automatic paging in the form
+    of an iterator.  For example to print the id of every photo tagged with the
+    logged in user:
 
       >>> total = 0
       >>> for photo in iter_pages(get('/19292868552/feed', {'limit':2})):
