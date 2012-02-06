@@ -18,7 +18,7 @@ from setuptools import setup
 
 setup(
     name='fbconsole',
-    version='0.2',
+    version='0.3',
     description='A simple facebook api client for writing command line scripts.',
     author='Paul Carduner, Facebook',
     author_email='pcardune@fb.com',
