@@ -314,7 +314,14 @@ def post(path, params=None):
       >>> print get('/'+photo_id)['name']
       My Photo
 
+    Or like an object:
+
+      >>> success = post('/'+photo_id+'/likes')
+      >>> print get('/'+photo_id+'/likes')['data'][0]['name']
+      David Amcafiaddddh Yangstein
+
     """
+    params = params or {}
     if poster_is_available:
         data, headers = poster.encode.multipart_encode(params)
         request = urllib2.Request(_get_url(path), data, headers)
