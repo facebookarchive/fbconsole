@@ -162,6 +162,41 @@ class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                              '<script>location = "?"+location.hash.slice(1);</script>'
                              '</head></html>')
 
+class ApiException(Exception):
+
+    def __init__(self, message, error_type, code):
+        super(ApiException, self).__init__(message)
+        self.error_type = error_type
+        self.code = code
+
+    @staticmethod
+    def from_json(data):
+        error_type = data.get('type')
+        for subclass in ApiException.__subclasses__():
+            if subclass.__name__ == error_type:
+                return subclass(data.get('message'), data.get('error_type'), data.get('code'))
+
+class OAuthException(ApiException):
+    """Just an oath exception."""
+
+
+def _safe_url_load(*args, **kwargs):
+    """Wrapper around urlopen that translates http errors into nicer exceptions."""
+    try:
+        return urllib2.urlopen(*args, **kwargs)
+    except urllib2.HTTPError, e:
+        body = e.read()
+        try:
+            body = json.loads(body)
+        except ValueError:
+            pass
+        else:
+            error = body.get('error')
+            if error:
+                raise ApiException.from_json(error)
+        raise e
+
+
 def help():
     """Print out some helpful information"""
     print '''
@@ -239,7 +274,7 @@ def get(path, params=None):
       100003169144448 David
 
     """
-    return json.load(urllib2.urlopen(_get_url(path, args=params)))
+    return json.load(_safe_url_load(_get_url(path, args=params)))
 
 def iter_pages(json_response):
     """Iterate over multiple pages of data.
@@ -266,7 +301,7 @@ def iter_pages(json_response):
         for item in json_response['data']:
             yield item
         next_url = json_response['paging']['next']
-        json_response = json.load(urllib2.urlopen(next_url))
+        json_response = json.load(_safe_url_load(next_url))
 
 def post(path, params=None):
     """Send a POST request to the graph api.
@@ -283,7 +318,7 @@ def post(path, params=None):
     if poster_is_available:
         data, headers = poster.encode.multipart_encode(params)
         request = urllib2.Request(_get_url(path), data, headers)
-        return json.load(urllib2.urlopen(request))
+        return json.load(_safe_url_load(request))
     else:
         opener = urllib2.build_opener(
             urllib2.HTTPCookieProcessor(cookielib.CookieJar()),
@@ -315,7 +350,7 @@ def fql(query):
 
     """
     url = _get_url('/fql', args={'q': query})
-    return json.load(urllib2.urlopen(url))['data']
+    return json.load(_safe_url_load(url))['data']
 
 INTRO_MESSAGE = '''\
   __ _                                _
