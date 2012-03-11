@@ -1,7 +1,10 @@
 src/fbconsole.egg-info
 env/
+env3/
+build/
 dist/
 README.html
 .fb_access_token
 mark.jpg
 poster-*.egg
+six-*.egg

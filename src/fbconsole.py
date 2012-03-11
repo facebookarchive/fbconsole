@@ -18,17 +18,18 @@ import BaseHTTPServer
 import cookielib
 import httplib
 import json
-import mimetools
+import random
 import mimetypes
 import os
 import os.path
 import stat
 import time
 import types
-import urllib2
 import urllib
 import webbrowser
 import StringIO
+import six
+from six import b
 
 poster_is_available = False
 try:
@@ -41,8 +42,32 @@ except ImportError:
     pass # we can live without this.
 
 from urlparse import urlparse, parse_qs
-from urllib import urlencode
 from pprint import pprint
+
+if six.PY3:
+    import io
+    FileType = io.IOBase
+else:
+    FileType = types.FileType
+
+if six.PY3:
+    from urllib.request import build_opener
+    from urllib.request import HTTPCookieProcessor
+    from urllib.request import BaseHandler
+    from urllib.request import HTTPHandler
+    from urllib.request import urlopen
+    from urllib.request import Request
+    from urllib.parse import urlencode
+    from urllib.error import HTTPError
+else:
+    from urllib2 import build_opener
+    from urllib2 import HTTPCookieProcessor
+    from urllib2 import BaseHandler
+    from urllib2 import HTTPHandler
+    from urllib2 import urlopen
+    from urllib2 import HTTPError
+    from urllib2 import Request
+    from urllib import urlencode
 
 APP_ID = '179745182062082'
 SERVER_PORT = 8080
@@ -85,8 +110,8 @@ def _get_url(path, args=None):
         endpoint = "http://%s.facebook.com" % subdomain
     return endpoint+str(path)+'?'+urlencode(args)
 
-class _MultipartPostHandler(urllib2.BaseHandler):
-    handler_order = urllib2.HTTPHandler.handler_order - 10 # needs to run first
+class _MultipartPostHandler(BaseHandler):
+    handler_order = HTTPHandler.handler_order - 10 # needs to run first
 
     def http_request(self, request):
         data = request.get_data()
@@ -95,7 +120,7 @@ class _MultipartPostHandler(urllib2.BaseHandler):
             params = []
             try:
                 for key, value in data.items():
-                    if isinstance(value, types.FileType):
+                    if isinstance(value, FileType):
                         files.append((key, value))
                     else:
                         params.append((key, value))
@@ -104,6 +129,8 @@ class _MultipartPostHandler(urllib2.BaseHandler):
 
             if len(files) == 0:
                 data = urlencode(params)
+                if six.PY3:
+                    data = data.encode('utf-8')
             else:
                 boundary, data = self.multipart_encode(params, files)
                 contenttype = 'multipart/form-data; boundary=%s' % boundary
@@ -115,23 +142,42 @@ class _MultipartPostHandler(urllib2.BaseHandler):
     https_request = http_request
 
     def multipart_encode(self, params, files, boundary=None, buffer=None):
-        boundary = boundary or mimetools.choose_boundary()
-        buffer = buffer or ''
-        for key, value in params:
-            buffer += '--%s\r\n' % boundary
-            buffer += 'Content-Disposition: form-data; name="%s"' % key
-            buffer += '\r\n\r\n' + value + '\r\n'
-        for key, fd in files:
-            file_size = os.fstat(fd.fileno())[stat.ST_SIZE]
-            filename = fd.name.split('/')[-1]
-            contenttype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-            buffer += '--%s\r\n' % boundary
-            buffer += 'Content-Disposition: form-data; '
-            buffer += 'name="%s"; filename="%s"\r\n' % (key, filename)
-            buffer += 'Content-Type: %s\r\n' % contenttype
-            fd.seek(0)
-            buffer += '\r\n' + fd.read() + '\r\n'
-        buffer += '--%s--\r\n\r\n' % boundary
+        if six.PY3:
+            boundary = boundary or b('--------------------%s---' % random.random())
+            buffer = buffer or b('')
+            for key, value in params:
+                buffer += b('--%s\r\n' % boundary)
+                buffer += b('Content-Disposition: form-data; name="%s"' % key)
+                buffer += b('\r\n\r\n' + value + '\r\n')
+            for key, fd in files:
+                file_size = os.fstat(fd.fileno())[stat.ST_SIZE]
+                filename = fd.name.split('/')[-1]
+                contenttype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+                buffer += b('--%s\r\n' % boundary)
+                buffer += b('Content-Disposition: form-data; ')
+                buffer += b('name="%s"; filename="%s"\r\n' % (key, filename))
+                buffer += b('Content-Type: %s\r\n' % contenttype)
+                fd.seek(0)
+                buffer += b('\r\n') + fd.read() + b('\r\n')
+            buffer += b('--%s--\r\n\r\n' % boundary)
+        else:
+            boundary = boundary or '--------------------%s---' % random.random()
+            buffer = buffer or ''
+            for key, value in params:
+                buffer += '--%s\r\n' % boundary
+                buffer += 'Content-Disposition: form-data; name="%s"' % key
+                buffer += '\r\n\r\n' + value + '\r\n'
+            for key, fd in files:
+                file_size = os.fstat(fd.fileno())[stat.ST_SIZE]
+                filename = fd.name.split('/')[-1]
+                contenttype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+                buffer += '--%s\r\n' % boundary
+                buffer += 'Content-Disposition: form-data; '
+                buffer += 'name="%s"; filename="%s"\r\n' % (key, filename)
+                buffer += 'Content-Type: %s\r\n' % contenttype
+                fd.seek(0)
+                buffer += '\r\n' + fd.read() + '\r\n'
+            buffer += '--%s--\r\n\r\n' % boundary
         return boundary, buffer
 
 
@@ -180,22 +226,34 @@ class OAuthException(ApiException):
     """Just an oath exception."""
 
 
+def _handle_http_error(e):
+    body = e.read()
+    if six.PY3:
+        body = body.decode('utf-8')
+    try:
+        body = json.loads(body)
+    except ValueError:
+        pass
+    else:
+        error = body.get('error')
+        if error:
+            return ApiException.from_json(error)
+    return e
+
 def _safe_url_load(*args, **kwargs):
     """Wrapper around urlopen that translates http errors into nicer exceptions."""
     try:
-        return urllib2.urlopen(*args, **kwargs)
-    except urllib2.HTTPError, e:
-        body = e.read()
-        try:
-            body = json.loads(body)
-        except ValueError:
-            pass
-        else:
-            error = body.get('error')
-            if error:
-                raise ApiException.from_json(error)
-        raise e
+        return urlopen(*args, **kwargs)
+    except HTTPError, e:
+        error = _handle_http_error(e)
+    raise error
 
+def _safe_json_load(*args, **kwargs):
+    f = _safe_url_load(*args, **kwargs)
+    if six.PY3:
+        return json.loads(f.read().decode('utf-8'))
+    else:
+        return json.load(f)
 
 def help():
     """Print out some helpful information"""
@@ -274,7 +332,7 @@ def get(path, params=None):
       100003169144448 David
 
     """
-    return json.load(_safe_url_load(_get_url(path, args=params)))
+    return _safe_json_load(_get_url(path, args=params))
 
 def iter_pages(json_response):
     """Iterate over multiple pages of data.
@@ -301,16 +359,18 @@ def iter_pages(json_response):
         for item in json_response['data']:
             yield item
         next_url = json_response['paging']['next']
-        json_response = json.load(_safe_url_load(next_url))
+        json_response = _safe_json_load(next_url)
 
 def post(path, params=None):
     """Send a POST request to the graph api.
 
     You can also upload files using this function.  For example:
 
+      >>> image = open("icon.gif", "rb")
       >>> photo_id = post('/me/photos',
       ...            {'name': 'My Photo',
-      ...             'source': open("icon.gif")})['id']
+      ...             'source': image})['id']
+      >>> image.close()
       >>> print get('/'+photo_id)['name']
       My Photo
 
@@ -324,13 +384,17 @@ def post(path, params=None):
     params = params or {}
     if poster_is_available:
         data, headers = poster.encode.multipart_encode(params)
-        request = urllib2.Request(_get_url(path), data, headers)
-        return json.load(_safe_url_load(request))
+        request = Request(_get_url(path), data, headers)
+        return _safe_json_load(request)
     else:
-        opener = urllib2.build_opener(
-            urllib2.HTTPCookieProcessor(cookielib.CookieJar()),
+        opener = build_opener(
+            HTTPCookieProcessor(cookielib.CookieJar()),
             _MultipartPostHandler)
-        return json.load(opener.open(_get_url(path), params))
+        try:
+            return json.loads(opener.open(_get_url(path), params).read().decode('utf-8'))
+        except HTTPError, e:
+            error = _handle_http_error(e)
+        raise error
 
 def delete(path, params=None):
     """Send a DELETE request to the graph api.
@@ -352,12 +416,13 @@ def fql(query):
 
     For example:
 
-      >>> fql('SELECT name FROM user WHERE uid = me()')
-      [{u'name': u'David Amcafiaddddh Yangstein'}]
+      >>> data = fql('SELECT name FROM user WHERE uid = me()')
+      >>> print data[0]['name']
+      David Amcafiaddddh Yangstein
 
     """
     url = _get_url('/fql', args={'q': query})
-    return json.load(_safe_url_load(url))['data']
+    return _safe_json_load(url)['data']
 
 INTRO_MESSAGE = '''\
   __ _                                _

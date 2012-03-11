@@ -14,7 +14,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import sys
 from setuptools import setup
+
+PY3 = sys.version_info[0] == 3
+
+install_requires = ['six']
+extra = {}
+if PY3:
+    extra['use_2to3'] = True
+else:
+    install_requires.append('poster')
+
 
 setup(
     name='fbconsole',
@@ -28,7 +39,7 @@ setup(
         'fbconsole',
     ],
     license="Apache 2.0",
-    install_requires=['poster'],
+    install_requires=install_requires,
     zip_safe=True,
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -43,5 +54,5 @@ setup(
       [console_scripts]
       fbconsole = fbconsole:shell
     """,
-
+    **extra
     )
