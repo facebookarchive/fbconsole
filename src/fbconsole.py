@@ -297,6 +297,115 @@ def logout():
         os.remove(ACCESS_TOKEN_FILE)
 
 
+class _GraphRequest:
+
+    def __init__(self, method, path, params, name):
+        self.method = method
+        self.path = path
+        self.params = params or {}
+        self.name = name
+        self.result = None
+        self.error = None
+
+    def get_result(self):
+        if self.error:
+            raise self.error
+        return self.result
+
+class Batch:
+    """A class that lets you batch multiple graph api calls into a single request.
+
+      >>> batch = Batch()
+      >>> me = batch.get('/me', name='me')
+      >>> coke = batch.get('/cocacola', name='coke')
+
+      >>> image = open("icon.gif", "rb")
+      >>> ignore = batch.post('/me/photos',
+      ...                    {'name': '{result=me:$.name} likes {result=coke:$.name}',
+      ...                     'source': image},
+      ...                    name='photo')
+      >>> photo = batch.get('/{result=photo:$.id}')
+
+      >>> batch.send()
+      >>> image.close()
+
+      >>> print photo.get_result()['name']
+      David Amcafiaddddh Yangstein likes Coca-Cola
+    """
+
+    def __init__(self, client=None):
+        self.client = client
+        self.__api_calls = []
+        self.__by_name = {}
+
+    def __add_request(self, request):
+        self.__api_calls.append(request)
+        if request.name:
+            self.__by_name[request.name] = request
+        return request
+
+    def __getitem__(self, key):
+        return self.__by_name[key]
+
+    def get(self, path, params=None, name=None):
+        return self.__add_request(_GraphRequest('GET', path[1:], params, name))
+
+    def post(self, path, params=None, name=None):
+        return self.__add_request(_GraphRequest('POST', path[1:], params, name))
+
+    def delete(self, path, params=None, name=None):
+        return self.__add_request(_GraphRequest('DELETE', path[1:], params, name))
+
+    def fql(self, query, name=None):
+        return self.__add_request(_GraphRequest('GET', 'fql', {'q': query}, name))
+
+    def __build_params(self):
+        # See https://developers.facebook.com/docs/reference/api/batch/
+        # for documentation on how the batch api is supposed to work.
+
+        batch = []
+        all_files = []
+        for request in self.__api_calls:
+            payload = {'method': request.method}
+            if request.name:
+                payload['name'] = request.name
+            if request.method in ['GET', 'DELETE']:
+                payload['relative_url'] = request.path+'?'+urlencode(request.params)
+            elif request.method == 'POST':
+                payload['relative_url'] = request.path
+                files = []
+                params = {}
+                for key, value in request.params.iteritems():
+                    if isinstance(value, FileType):
+                        all_files.append(value)
+                        files.append('file%s' % (len(all_files) - 1))
+                    else:
+                        params[key] = value
+                payload['body'] = urlencode(params)
+                payload['attached_files'] = ','.join(files)
+            batch.append(payload)
+
+        params = {'batch':json.dumps(batch)}
+        for i, f in enumerate(all_files):
+            params['file%s' % i] = f
+
+        return params
+
+    def send(self):
+        client = self.client or _get_client()
+        responses = client.post('', self.__build_params())
+
+        # process the response
+        for request, response in zip(self.__api_calls, responses):
+            if response is None:
+                # this happens when you use the result in a following request
+                continue
+            if response['code'] == 200:
+                request.result = json.loads(response['body'])
+            else:
+                request.error = ApiException.from_json(json.loads(response['body'])['error'])
+
+
 class Client:
     """A class that encapsulates a client for a single access token.
 
