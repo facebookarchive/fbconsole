@@ -303,7 +303,7 @@ class Client:
     Using a Client object, you can make requests using different access tokens
     within the same application.
 
-      >>> user1 = Client('AAACjeiZB6FgIBAPIFHAZC0dJLlZAFZB4kSWUxAyHLrd6YVnHZC5k4KW1HxddORWWigoJA1dAsZB4zz0ZBF6QODAcwSIwvxC1u2ZCXewkxB0qQM5IKpwGkVoS')
+      >>> user1 = Client('AAACjeiZB6FgIBAJhJMaspnA8V06q859FvUJsJtVbEsXpEKOv5H6RIvU7hWU5EgINj5fBPoGlVt0JIkWVYHVemOmehqMyiQFSWDbDq0AZDZD')
       >>> user2 = Client('AAACjeiZB6FgIBAB8eZABg7So8ALDisFLugfIJSZCg3FEDRy82yEmdXYYfNvdv2kWVMWxaJgWqqVMPtG5v5n4lMG5VXmZBZBykQkeluhpFPQZDZD')
 
       >>> print user1.get('/me')['name']
