@@ -72,6 +72,7 @@ else:
 APP_ID = '179745182062082'
 SERVER_PORT = 8080
 ACCESS_TOKEN = None
+CLIENT = None
 ACCESS_TOKEN_FILE = '.fb_access_token'
 AUTH_SCOPE = []
 
@@ -91,24 +92,13 @@ __all__ = [
     'shell',
     'fql',
     'iter_pages',
+    'Client',
     'APP_ID',
     'SERVER_PORT',
     'ACCESS_TOKEN',
     'AUTH_SCOPE',
     'ACCESS_TOKEN_FILE']
 
-def _get_url(path, args=None):
-    args = args or {}
-    if ACCESS_TOKEN:
-        args['access_token'] = ACCESS_TOKEN
-    subdomain = 'graph'
-    if '/videos' in path:
-        subdomain = 'graph-video'
-    if 'access_token' in args or 'client_secret' in args:
-        endpoint = "https://%s.facebook.com" % subdomain
-    else:
-        endpoint = "http://%s.facebook.com" % subdomain
-    return endpoint+str(path)+'?'+urlencode(args)
 
 class _MultipartPostHandler(BaseHandler):
     handler_order = HTTPHandler.handler_order - 10 # needs to run first
@@ -306,18 +296,77 @@ def logout():
     if os.path.exists(ACCESS_TOKEN_FILE):
         os.remove(ACCESS_TOKEN_FILE)
 
-def graph_url(path, params=None):
-    """Get the full url to the graph api for the given path and query args.
 
-    This is useful if you want to use your own method of making http requests or
-    are not interested in the json parsing that occurs by default. For example,
-    download a large profile picture of Mark Zuckerberg:
+class Client:
+    """A class that encapsulates a client for a single access token.
 
-      >>> url = graph_url('/zuck/picture', {"type":"large"})
-      >>> filename, response = urllib.urlretrieve(url, 'mark.jpg')
+    Using a Client object, you can make requests using different access tokens
+    within the same application.
+
+      >>> user1 = Client('AAACjeiZB6FgIBAPIFHAZC0dJLlZAFZB4kSWUxAyHLrd6YVnHZC5k4KW1HxddORWWigoJA1dAsZB4zz0ZBF6QODAcwSIwvxC1u2ZCXewkxB0qQM5IKpwGkVoS')
+      >>> user2 = Client('AAACjeiZB6FgIBAB8eZABg7So8ALDisFLugfIJSZCg3FEDRy82yEmdXYYfNvdv2kWVMWxaJgWqqVMPtG5v5n4lMG5VXmZBZBykQkeluhpFPQZDZD')
+
+      >>> print user1.get('/me')['name']
+      David Amcfbdajbbhi Alisonsen
+      >>> print user2.get('/me')['name']
+      David Amcafiaddddh Yangstein
 
     """
-    return _get_url(path, args=params)
+
+    def __init__(self, access_token=None):
+        self.access_token = access_token
+
+    def __get_url(self, path, args=None):
+        args = args or {}
+        if self.access_token:
+            args['access_token'] = self.access_token
+        subdomain = 'graph'
+        if '/videos' in path:
+            subdomain = 'graph-video'
+        if 'access_token' in args or 'client_secret' in args:
+            endpoint = "https://%s.facebook.com" % subdomain
+        else:
+            endpoint = "http://%s.facebook.com" % subdomain
+        return endpoint+str(path)+'?'+urlencode(args)
+
+    def get(self, path, params=None):
+        return _safe_json_load(self.__get_url(path, args=params))
+
+    def post(self, path, params=None):
+        params = params or {}
+        if poster_is_available:
+            data, headers = poster.encode.multipart_encode(params)
+            request = Request(self.__get_url(path), data, headers)
+            return _safe_json_load(request)
+        else:
+            opener = build_opener(
+                HTTPCookieProcessor(cookielib.CookieJar()),
+                _MultipartPostHandler)
+            try:
+                return json.loads(opener.open(self.__get_url(path), params).read().decode('utf-8'))
+            except HTTPError, e:
+                error = _handle_http_error(e)
+            raise error
+
+    def delete(self, path, params=None):
+        if not params:
+            params = {}
+        params['method'] = 'delete'
+        return post(path, params)
+
+    def fql(self, query):
+        url = self.__get_url('/fql', args={'q': query})
+        return _safe_json_load(url)['data']
+
+    def graph_url(self, path, params=None):
+        return self.__get_url(path, args=params)
+
+
+def _get_client():
+    global CLIENT
+    if not CLIENT or CLIENT.access_token != ACCESS_TOKEN:
+        CLIENT = Client(ACCESS_TOKEN)
+    return CLIENT
 
 def get(path, params=None):
     """Send a GET request to the graph api.
@@ -332,7 +381,7 @@ def get(path, params=None):
       100003169144448 David
 
     """
-    return _safe_json_load(_get_url(path, args=params))
+    return _get_client().get(path, params=params)
 
 def iter_pages(json_response):
     """Iterate over multiple pages of data.
@@ -381,20 +430,7 @@ def post(path, params=None):
       David Amcafiaddddh Yangstein
 
     """
-    params = params or {}
-    if poster_is_available:
-        data, headers = poster.encode.multipart_encode(params)
-        request = Request(_get_url(path), data, headers)
-        return _safe_json_load(request)
-    else:
-        opener = build_opener(
-            HTTPCookieProcessor(cookielib.CookieJar()),
-            _MultipartPostHandler)
-        try:
-            return json.loads(opener.open(_get_url(path), params).read().decode('utf-8'))
-        except HTTPError, e:
-            error = _handle_http_error(e)
-        raise error
+    return _get_client().post(path, params=params)
 
 def delete(path, params=None):
     """Send a DELETE request to the graph api.
@@ -406,10 +442,7 @@ def delete(path, params=None):
       True
 
     """
-    if not params:
-        params = {}
-    params['method'] = 'delete'
-    return post(path, params)
+    return _get_client().delete(path, params=params)
 
 def fql(query):
     """Make an fql request.
@@ -421,8 +454,21 @@ def fql(query):
       David Amcafiaddddh Yangstein
 
     """
-    url = _get_url('/fql', args={'q': query})
-    return _safe_json_load(url)['data']
+    return _get_client().fql(query)
+
+def graph_url(path, params=None):
+    """Get the full url to the graph api for the given path and query args.
+
+    This is useful if you want to use your own method of making http requests or
+    are not interested in the json parsing that occurs by default. For example,
+    download a large profile picture of Mark Zuckerberg:
+
+      >>> url = graph_url('/zuck/picture', {"type":"large"})
+      >>> filename, response = urllib.urlretrieve(url, 'mark.jpg')
+
+    """
+    return _get_client().graph_url(path, params=params)
+
 
 INTRO_MESSAGE = '''\
   __ _                                _
