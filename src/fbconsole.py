@@ -210,7 +210,17 @@ class ApiException(Exception):
         error_type = data.get('type')
         for subclass in ApiException.__subclasses__():
             if subclass.__name__ == error_type:
-                return subclass(data.get('message'), data.get('error_type'), data.get('code'))
+                return subclass(data.get('message'),
+                                data.get('error_type'),
+                                data.get('code'))
+
+        return UnknownApiException(data.get('message'),
+                                   data.get('error_type'),
+                                   data.get('code'))
+
+
+class UnknownApiException(ApiException):
+    """Some unknown error."""
 
 class OAuthException(ApiException):
     """Just an oath exception."""
