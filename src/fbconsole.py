@@ -299,11 +299,12 @@ def logout():
 
 class _GraphRequest:
 
-    def __init__(self, method, path, params, name):
+    def __init__(self, method, path, params, name, ignore_result):
         self.method = method
         self.path = path
         self.params = params or {}
         self.name = name
+        self.ignore_result = ignore_result
         self.result = None
         self.error = None
 
@@ -315,49 +316,100 @@ class _GraphRequest:
 class Batch:
     """A class that lets you batch multiple graph api calls into a single request.
 
+
+    First we create a new batch instance.
+
       >>> batch = Batch()
+
+    Then we can start fetching a bunch of stuff by calling
+    get/post/delete/etc. on the batch object.  When calling these methods, a
+    request object will be returned which can be used to fetch the result of
+    that request after the batch has been sent.  By passing in a name, you can
+    refer to the results of a previous request in a subsequent request using the
+    special syntax defined documented here:
+    https://developers.facebook.com/docs/reference/api/batch/
+
       >>> me = batch.get('/me', name='me')
       >>> coke = batch.get('/cocacola', name='coke')
 
+    If you pass in ignore_result=True when making the request, then no request
+    object will be returned and the results will not be passed down from
+    facebook.  You can still use the results in other requests using the
+    specialized syntax, but facebook won't send the results back.
+
       >>> image = open("icon.gif", "rb")
-      >>> ignore = batch.post('/me/photos',
-      ...                    {'name': '{result=me:$.name} likes {result=coke:$.name}',
-      ...                     'source': image},
-      ...                    name='photo')
+      >>> batch.post('/me/photos',
+      ...            {'name': '{result=me:$.name} likes {result=coke:$.name}',
+      ...             'source': image},
+      ...            name='photo',
+      ...            ignore_result=True)
       >>> photo = batch.get('/{result=photo:$.id}')
+
+    Now we can send the request:
 
       >>> batch.send()
       >>> image.close()
 
+    And look at the results:
+
+      >>> print me.get_result()['name']
+      David Amcafiaddddh Yangstein
+
+      >>> print coke.get_result()['name']
+      Coca-Cola
+
       >>> print photo.get_result()['name']
       David Amcafiaddddh Yangstein likes Coca-Cola
+
+    If you try to send a batch request twice, it will fail.  You must
+    reconstruct a new batch.
+
+      >>> batch.send()
+      Traceback (most recent call last):
+      ...
+      RuntimeError: This batch request has already been sent
+
+
     """
 
     def __init__(self, client=None):
         self.client = client
         self.__api_calls = []
-        self.__by_name = {}
+        self.__batch_request_sent = False
 
     def __add_request(self, request):
         self.__api_calls.append(request)
-        if request.name:
-            self.__by_name[request.name] = request
+        if request.ignore_result:
+            return None
         return request
 
-    def __getitem__(self, key):
-        return self.__by_name[key]
+    def get(self, path, params=None, name=None, ignore_result=False):
+        return self.__add_request(_GraphRequest('GET',
+                                                path[1:],
+                                                params,
+                                                name,
+                                                ignore_result))
 
-    def get(self, path, params=None, name=None):
-        return self.__add_request(_GraphRequest('GET', path[1:], params, name))
+    def post(self, path, params=None, name=None, ignore_result=False):
+        return self.__add_request(_GraphRequest('POST',
+                                                path[1:],
+                                                params,
+                                                name,
+                                                ignore_result))
 
-    def post(self, path, params=None, name=None):
-        return self.__add_request(_GraphRequest('POST', path[1:], params, name))
+    def delete(self, path, params=None, name=None, ignore_result=False):
+        return self.__add_request(_GraphRequest('DELETE',
+                                                path[1:],
+                                                params,
+                                                name,
+                                                ignore_result))
 
-    def delete(self, path, params=None, name=None):
-        return self.__add_request(_GraphRequest('DELETE', path[1:], params, name))
-
-    def fql(self, query, name=None):
-        return self.__add_request(_GraphRequest('GET', 'fql', {'q': query}, name))
+    def fql(self, query, name=None, ignore_result=False):
+        return self.__add_request(_GraphRequest('GET',
+                                                'fql',
+                                                {'q': query},
+                                                name,
+                                                ignore_result))
 
     def __build_params(self):
         # See https://developers.facebook.com/docs/reference/api/batch/
@@ -367,6 +419,8 @@ class Batch:
         all_files = []
         for request in self.__api_calls:
             payload = {'method': request.method}
+            if not request.ignore_result:
+                payload['omit_response_on_success'] = False
             if request.name:
                 payload['name'] = request.name
             if request.method in ['GET', 'DELETE']:
@@ -392,6 +446,10 @@ class Batch:
         return params
 
     def send(self):
+        if self.__batch_request_sent:
+            raise RuntimeError("This batch request has already been sent")
+        self.__batch_request_sent = True
+
         client = self.client or _get_client()
         responses = client.post('', self.__build_params())
 
