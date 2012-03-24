@@ -17,7 +17,7 @@
 import BaseHTTPServer
 import cookielib
 import httplib
-import json
+import anyjson as json
 import random
 import mimetypes
 import os
@@ -41,8 +41,13 @@ try:
 except ImportError:
     pass # we can live without this.
 
-from urlparse import urlparse, parse_qs
+from urlparse import urlparse
 from pprint import pprint
+
+try:
+    from urlparse import parse_qs
+except ImportError:
+    from cgi import parse_qs
 
 if six.PY3:
     import io
@@ -253,7 +258,7 @@ def _safe_json_load(*args, **kwargs):
     if six.PY3:
         return json.loads(f.read().decode('utf-8'))
     else:
-        return json.load(f)
+        return json.loads(f.read())
 
 def help():
     """Print out some helpful information"""

@@ -19,12 +19,22 @@ from setuptools import setup
 
 PY3 = sys.version_info[0] == 3
 
-install_requires = ['six']
+install_requires = [
+    'six',
+    'anyjson',
+    ]
 extra = {}
 if PY3:
     extra['use_2to3'] = True
 else:
-    install_requires.append('poster')
+    install_requires.extend([
+            'poster',
+            ])
+
+if sys.version_info[0] == 2 and sys.version_info[1] == 5:
+    install_requires.extend([
+            'simplejson',
+            ])
 
 
 setup(
