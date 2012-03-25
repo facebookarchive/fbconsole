@@ -80,6 +80,7 @@ ACCESS_TOKEN = None
 CLIENT = None
 ACCESS_TOKEN_FILE = '.fb_access_token'
 AUTH_SCOPE = []
+BATCH_REQUEST_LIMIT = 50
 
 AUTH_SUCCESS_HTML = """
 You have successfully logged in to facebook with fbconsole.
@@ -91,6 +92,8 @@ __all__ = [
     'authenticate',
     'logout',
     'graph_url',
+    'oauth_url',
+    'Batch',
     'get',
     'post',
     'delete',
@@ -197,11 +200,11 @@ class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 else:
                     data['expires_at'] = int(time.time()+int(expiration))
             open(ACCESS_TOKEN_FILE,'w').write(json.dumps(data))
-            self.wfile.write(AUTH_SUCCESS_HTML)
+            self.wfile.write(b(AUTH_SUCCESS_HTML))
         else:
-            self.wfile.write('<html><head>'
-                             '<script>location = "?"+location.hash.slice(1);</script>'
-                             '</head></html>')
+            self.wfile.write(b('<html><head>'
+                               '<script>location = "?"+location.hash.slice(1);</script>'
+                               '</head></html>'))
 
 class ApiException(Exception):
 
@@ -296,11 +299,10 @@ def authenticate():
             needs_auth = False
 
     if needs_auth:
-        webbrowser.open('https://www.facebook.com/dialog/oauth?' +
-                        urlencode({'client_id':APP_ID,
-                                   'redirect_uri':'http://127.0.0.1:%s/' % SERVER_PORT,
-                                   'response_type':'token',
-                                   'scope':','.join(AUTH_SCOPE)}))
+        webbrowser.open(oauth_url(
+                APP_ID,
+                'http://127.0.0.1:%s/' % SERVER_PORT, AUTH_SCOPE
+                ))
 
         httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', SERVER_PORT), _RequestHandler)
         while ACCESS_TOKEN is None:
@@ -330,7 +332,6 @@ class _GraphRequest:
 
 class Batch:
     """A class that lets you batch multiple graph api calls into a single request.
-
 
     First we create a new batch instance.
 
@@ -384,7 +385,15 @@ class Batch:
       ...
       RuntimeError: This batch request has already been sent
 
+    There is also a limit to the number of requests that can be sent in a single
+    batch.  Going over this limit will cause an exception to be thrown.
 
+      >>> batch = Batch()
+      >>> for i in xrange(BATCH_REQUEST_LIMIT+1):
+      ...   batch.get('/me')
+      Traceback (most recent call last):
+      ...
+      RuntimeError: You can't send more than 50 requests in a single batch
     """
 
     def __init__(self, client=None):
@@ -393,6 +402,10 @@ class Batch:
         self.__batch_request_sent = False
 
     def __add_request(self, request):
+        if len(self.__api_calls) >= BATCH_REQUEST_LIMIT:
+            raise RuntimeError(
+                "You can't send more than %s requests in a single batch" %
+                BATCH_REQUEST_LIMIT)
         self.__api_calls.append(request)
         if request.ignore_result:
             return None
@@ -650,6 +663,18 @@ def graph_url(path, params=None):
 
     """
     return _get_client().graph_url(path, params=params)
+
+def oauth_url(app_id, redirect_uri, auth_scope):
+    """Generates a url to an oath authentication dialog.
+
+      >>> print oauth_url(APP_ID, 'http://127.0.0.1:8080/', ['publish_stream'])
+      https://www.facebook.com/dialog/oauth?scope=publish_stream&redirect_uri=http%3A%2F%2F127.0.0.1%3A8080%2F&response_type=token&client_id=179745182062082
+    """
+    return 'https://www.facebook.com/dialog/oauth?' + \
+        urlencode({'client_id':app_id,
+                   'redirect_uri':redirect_uri,
+                   'response_type':'token',
+                   'scope':','.join(auth_scope)})
 
 
 INTRO_MESSAGE = '''\
