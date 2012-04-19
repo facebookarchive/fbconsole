@@ -265,6 +265,43 @@ def _safe_json_load(*args, **kwargs):
     else:
         return json.loads(f.read())
 
+def _instantiate_browser(debug=False):
+    """Setup the mechanize browser to handle redirects, robots, etc to
+    programmatically complete oauth.
+
+    Helpful resources:
+    * http://stockrt.github.com/p/emulating-a-browser-in-python-with-mechanize/
+    """
+
+    # instantiate the mechanize browser
+    browser = mechanize.Browser()
+
+    # set different settings
+    browser.set_handle_equiv(True)
+    # browser.set_handle_gzip(True) # this is experimental
+    browser.set_handle_redirect(True)
+    browser.set_handle_referer(True)
+    browser.set_handle_robots(False)
+    browser.set_handle_refresh(
+        mechanize._http.HTTPRefreshProcessor(), 
+        max_time=1,
+    )
+    
+    # add debug logging
+    if debug:
+        browser.set_debug_http(True)
+        browser.set_debug_redirects(True)
+        browser.set_debug_responses(True)
+
+    # add the cookie jar
+    cj = cookielib.LWPCookieJar()
+    browser.set_cookiejar(cj)
+
+    # setup the headers
+    browser.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
+
+    return browser
+
 def help():
     """Print out some helpful information"""
     print '''
@@ -311,7 +348,7 @@ def authenticate():
             httpd.handle_request()
 
 def automatically_authenticate(username=None, password=None, 
-                               debug_mechanize=False):
+                               debug=False):
     """Authenticate with facebook automatically so you can make api
     calls that require authorization.
 
@@ -321,6 +358,8 @@ def automatically_authenticate(username=None, password=None,
     If you want to request certain permissions, set the AUTH_SCOPE global
     variable to the list of permissions you want.
     """
+
+    browser = _instantiate_browser(debug=debug)
 
     raise NotImplementedError
 
@@ -725,4 +764,11 @@ def test_suite():
     return doctest.DocTestSuite()
 
 if __name__ == '__main__':
-    shell()
+    # shell()
+
+    import getpass
+    username = raw_input("enter facebook username: ")
+    password = getpass.getpass("enter facebook password for '%s': " % username)
+
+    automatically_authenticate(username, password, debug=True)
+    print "Hello", get('/me')['name']
