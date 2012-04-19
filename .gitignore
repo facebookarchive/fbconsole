@@ -9,3 +9,4 @@ mark.jpg
 *.egg
 *.egg
 *~
+*.pyc
