@@ -129,9 +129,9 @@ process automatically:
 
     fbconsole.automatically_authenticate(
         username,     # facebook username for authentication
-	password,     # facebook password for authentication
-	app_secret,   # "app secret" from [facebook settings](https://developers.facebook.com/apps)
-	redirect_uri, # redirect uri specified in [facebook settings](https://developers.facebook.com/apps)
+        password,     # facebook password for authentication
+        app_secret,   # "app secret" from facebook app settings
+        redirect_uri, # redirect uri specified in facebook app settings
     )
     
 This method for authentication is particularly helpful, for example,
