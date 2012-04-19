@@ -22,6 +22,7 @@ PY3 = sys.version_info[0] == 3
 install_requires = [
     'six',
     'anyjson',
+    'mechanize',
     ]
 extra = {}
 if PY3:

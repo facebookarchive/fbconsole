@@ -30,6 +30,7 @@ import webbrowser
 import StringIO
 import six
 from six import b
+import mechanize
 
 poster_is_available = False
 try:
