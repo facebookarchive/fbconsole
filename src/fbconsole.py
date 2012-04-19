@@ -358,11 +358,11 @@ def authenticate():
         while ACCESS_TOKEN is None:
             httpd.handle_request()
 
-def automatically_authenticate(username, password, client_secret, redirect_uri,
+def automatically_authenticate(username, password, app_secret, redirect_uri,
                                debug=False):
     """Authenticate with facebook automatically so that server-side
     facebook apps can make api calls that require authorization. A
-    username, password, and client_secret must be specified
+    username, password, and app_secret must be specified
     (http://developers.facebook.com/docs/authentication/server-side/)
 
     This method automatically sets the ACCESS_TOKEN so that all
@@ -416,7 +416,7 @@ def automatically_authenticate(username, password, client_secret, redirect_uri,
     url="https://graph.facebook.com/oauth/access_token?"+urllib.urlencode({
         "client_id": APP_ID,
         "redirect_uri": redirect_uri,
-        "client_secret": client_secret,
+        "client_secret": app_secret,
         "code": code,
     })
     browser.open(url)
