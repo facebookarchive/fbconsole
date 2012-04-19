@@ -90,6 +90,7 @@ You can close this window now.
 __all__ = [
     'help',
     'authenticate',
+    'automatically_authenticate',
     'logout',
     'graph_url',
     'oauth_url',
@@ -307,6 +308,20 @@ def authenticate():
         httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', SERVER_PORT), _RequestHandler)
         while ACCESS_TOKEN is None:
             httpd.handle_request()
+
+def automatically_authenticate(username=None, password=None, 
+                               debug_mechanize=False):
+    """Authenticate with facebook automatically so you can make api
+    calls that require authorization.
+
+    This method automatically sets the ACCESS_TOKEN so that all
+    subsequent calls to facebook are authenticated.
+
+    If you want to request certain permissions, set the AUTH_SCOPE global
+    variable to the list of permissions you want.
+    """
+
+    raise NotImplementedError
 
 def logout():
     """Logout of facebook.  This just removes the cached access token."""
