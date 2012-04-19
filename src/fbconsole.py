@@ -240,7 +240,9 @@ class AutomaticLoginError(Exception):
     An error has occurred during login. This can occur for a number
     of reasons. Make sure you have correctly specified the username,
     password, client_secret, redirect_uri, and APP_ID for your
-    facebook app.
+    facebook app:
+
+        https://developers.facebook.com/apps
     """
     def __str__(self):
         return self.__class__.__doc__
@@ -405,8 +407,7 @@ def automatically_authenticate(username, password, client_secret, redirect_uri,
     oauth = parse_qs(auth_url.query)
     if "state" not in oauth:
         raise AutomaticLoginError
-        
-    assert oauth["state"][0] == state, "%s != %s" % (
+    assert oauth["state"][0] == state, "Inconsistent state: %s != %s" % (
         oauth["state"][0], state,
     )
     code = oauth["code"][0]
@@ -414,7 +415,7 @@ def automatically_authenticate(username, password, client_secret, redirect_uri,
     # 4. Exchange the code for a user access token for this user's data
     url="https://graph.facebook.com/oauth/access_token?"+urllib.urlencode({
         "client_id": APP_ID,
-        "redirect_uri": "http://staging.datascopeanalytics.com/www",
+        "redirect_uri": redirect_uri,
         "client_secret": client_secret,
         "code": code,
     })
