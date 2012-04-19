@@ -50,6 +50,7 @@ To remove this access token, you can call `logout()`:
 
     fbconsole.logout()
 
+See below for other modes of authentication.
 
 ### Graph API Basics ###
 
