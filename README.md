@@ -6,19 +6,6 @@ You can install fbconsole using pip:
 
     pip install fbconsole
 
-Or if you don't want to install anything first, just include these lines at the
-top of your script:
-
-    from urllib import urlretrieve
-    import imp
-    urlretrieve('https://raw.github.com/facebook/fbconsole/master/src/fbconsole.py',
-                '.fbconsole.py')
-    fbconsole = imp.load_source('fb', '.fbconsole.py')
-
-Please take note of the
-[security risks](http://en.wikipedia.org/wiki/Man-in-the-middle_attack) with
-running code downloaded from the internet like this.
-
 
 ## Quick Start Guide ##
 
