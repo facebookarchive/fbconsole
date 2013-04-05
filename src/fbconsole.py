@@ -602,7 +602,10 @@ def iter_pages(json_response):
     while len(json_response.get('data','')):
         for item in json_response['data']:
             yield item
-        next_url = json_response['paging']['next']
+        try:
+            next_url = json_response['paging']['next']
+        except KeyError:
+            break
         json_response = _safe_json_load(next_url)
 
 def post(path, params=None):
