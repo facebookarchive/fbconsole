@@ -87,6 +87,7 @@ CLIENT = None
 ACCESS_TOKEN_FILE = '.fb_access_token'
 AUTH_SCOPE = []
 BATCH_REQUEST_LIMIT = 50
+SANDBOX_DOMAIN = None
 
 AUTH_SUCCESS_HTML = """
 You have successfully logged in to facebook with fbconsole.
@@ -112,7 +113,8 @@ __all__ = [
     'SERVER_PORT',
     'ACCESS_TOKEN',
     'AUTH_SCOPE',
-    'ACCESS_TOKEN_FILE']
+    'ACCESS_TOKEN_FILE',
+    'SANDBOX_DOMAIN']
 
 
 class _MultipartPostHandler(BaseHandler):
@@ -646,10 +648,12 @@ class Client:
         subdomain = 'graph'
         if '/videos' in path:
             subdomain = 'graph-video'
+        if SANDBOX_DOMAIN:
+            subdomain = '.'.join([subdomain, SANDBOX_DOMAIN])
+        protocol = 'http://'
         if 'access_token' in args or 'client_secret' in args:
-            endpoint = "https://%s.facebook.com" % subdomain
-        else:
-            endpoint = "http://%s.facebook.com" % subdomain
+            protocol = 'https://'
+        endpoint = "%s%s.facebook.com" % (protocol, subdomain)
         return endpoint+str(path)+'?'+urlencode(args)
 
     def get(self, path, params=None):

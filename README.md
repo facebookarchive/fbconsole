@@ -131,7 +131,7 @@ secret, and redirect uri are all consistent with your apps
 
 ### Other Options ###
 
-There are two other options you can specify.
+There are a few other options you can specify.
 
 - `SERVER_PORT` controls which port the local server runs on.  If you modify
      this, make sure your applications settings on Facebook, specifically "Site
@@ -143,6 +143,12 @@ There are two other options you can specify.
 - `AUTH_SUCCESS_HTML` is the html page content displayed to the user in their browser
   window once they have successfully authenticated.
 
+- `SANDBOX_DOMAIN` lets you specify a special domain to use for all
+  requests.  For example, setting `SANDBOX_DOMAIN` to "beta" will
+  allow you to test facebook's beta tier by sending all requests to
+  http://graph.beta.facebook.com.  See
+  https://developers.facebook.com/support/beta-tier/ for more
+  information.
 
 ## Feedback ##
 
