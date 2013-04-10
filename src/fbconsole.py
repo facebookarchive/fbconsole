@@ -670,8 +670,18 @@ def graph_url(path, params=None):
 def oauth_url(app_id, redirect_uri, auth_scope):
     """Generates a url to an oath authentication dialog.
 
-      >>> print oauth_url(APP_ID, 'http://127.0.0.1:8080/', ['publish_stream'])
-      https://www.facebook.com/dialog/oauth?scope=publish_stream&redirect_uri=http%3A%2F%2F127.0.0.1%3A8080%2F&response_type=token&client_id=179745182062082
+      >>> from urlparse import urlparse, parse_qsl
+      >>> url = urlparse(oauth_url(APP_ID, 'http://127.0.0.1:8080/', ['publish_stream']))
+      >>> url.scheme
+      'https'
+      >>> url.path
+      '/dialog/oauth'
+      >>> url.hostname
+      'www.facebook.com'
+      >>> sorted(parse_qsl(url.query))
+      [('client_id', '179745182062082'), ('redirect_uri', 'http://127.0.0.1:8080/'), ('response_type', 'token'), ('scope', 'publish_stream')]
+      
+
     """
     return 'https://www.facebook.com/dialog/oauth?' + \
         urlencode({'client_id':app_id,
