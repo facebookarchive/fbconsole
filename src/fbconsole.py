@@ -30,7 +30,6 @@ import webbrowser
 import StringIO
 import six
 from six import b
-import mechanize
 
 poster_is_available = False
 try:
@@ -74,6 +73,12 @@ else:
     from urllib2 import HTTPError
     from urllib2 import Request
     from urllib import urlencode
+
+# import mechanize in python 2.x
+if six.PY3:
+    mechanize = None
+else:
+    import mechanize
 
 APP_ID = '179745182062082'
 SERVER_PORT = 8080
