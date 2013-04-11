@@ -124,9 +124,10 @@ altogether:
     fbconsole.ACCESS_TOKEN = '<your-access-token>'
 
 As a means to set the `ACCESS_TOKEN`, fbconsole provides an automatic
-mechanism for authenticating server-side apps by completing the OAuth
-process automatically:
+mechanism (python 2.x only) for authenticating server-side apps by
+completing the OAuth process automatically:
 
+    # WARNING: only supported for python 2.x
     fbconsole.automatically_authenticate(
         username,     # facebook username for authentication
         password,     # facebook password for authentication
