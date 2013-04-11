@@ -383,6 +383,13 @@ def automatically_authenticate(username, password, app_secret, redirect_uri,
     global AUTH_SCOPE
     global ACCESS_TOKEN
 
+    # throw an import error as mechanize does not work with python
+    # 3. upset? contribute! https://github.com/jjlee/mechanize
+    if mechanize is None:
+        msg = "automatically_authenticate method is not compatible with "
+        msg += "python 3.x due to mechanize incapatability."
+        raise ImportError(msg)
+
     # instantiate the browser
     browser = _instantiate_browser(debug=debug)
 
