@@ -22,7 +22,6 @@ PY3 = sys.version_info[0] == 3
 install_requires = [
     'six',
     'anyjson',
-    'mechanize',
     ]
 extra = {}
 if PY3:
@@ -30,6 +29,7 @@ if PY3:
 else:
     install_requires.extend([
             'poster',
+            'mechanize',
             ])
 
 if sys.version_info[0] == 2 and sys.version_info[1] == 5:
