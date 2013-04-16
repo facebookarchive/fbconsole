@@ -37,6 +37,7 @@ To remove this access token, you can call `logout()`:
 
     fbconsole.logout()
 
+See below for other modes of authentication.
 
 ### Graph API Basics ###
 
@@ -109,6 +110,24 @@ altogether:
 
     fbconsole.ACCESS_TOKEN = '<your-access-token>'
 
+As a means to set the `ACCESS_TOKEN`, fbconsole provides an automatic
+mechanism (python 2.x only) for authenticating server-side apps by
+completing the OAuth process automatically:
+
+    # WARNING: only supported for python 2.x
+    fbconsole.automatically_authenticate(
+        username,     # facebook username for authentication
+        password,     # facebook password for authentication
+        app_secret,   # "app secret" from facebook app settings
+        redirect_uri, # redirect uri specified in facebook app settings
+    )
+    
+This method for authentication is particularly helpful, for example,
+for running cron jobs that grab data from the Graph API on a daily
+basis. If you have any trouble using the `automatic_authentication`
+method, be sure to double check that the username, password, app
+secret, and redirect uri are all consistent with your apps
+[facebook settings](https://developers.facebook.com/apps).
 
 ### Other Options ###
 

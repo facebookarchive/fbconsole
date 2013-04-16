@@ -29,6 +29,7 @@ if PY3:
 else:
     install_requires.extend([
             'poster',
+            'mechanize',
             ])
 
 if sys.version_info[0] == 2 and sys.version_info[1] == 5:
