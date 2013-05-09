@@ -102,7 +102,7 @@ modify the APP_ID setting.  For example:
     fbconsole.authenticate()
 
 For the authentication flow to work, you must configure your Facebook
-application correctly by setting the "Site URL" option to http://127.0.0.1:8080
+application correctly by setting the "Site URL" option to http://local.fbconsole.com:8080
 
 If you don't want to change your application settings, you can also specify an
 access token to use directly, in which case you can skip authentication

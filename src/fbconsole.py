@@ -358,7 +358,7 @@ def authenticate():
     if needs_auth:
         webbrowser.open(oauth_url(
                 APP_ID,
-                'http://127.0.0.1:%s/' % SERVER_PORT, AUTH_SCOPE
+                'http://local.fbconsole.com:%s/' % SERVER_PORT, AUTH_SCOPE
                 ))
 
         httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', SERVER_PORT), _RequestHandler)
