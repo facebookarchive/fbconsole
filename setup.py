@@ -40,7 +40,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] == 5:
 
 setup(
     name='fbconsole',
-    version='0.3',
+    version='0.4',
     description='A simple facebook api client for writing command line scripts.',
     author='Paul Carduner, Facebook',
     author_email='pcardune@fb.com',
