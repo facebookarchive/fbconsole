@@ -44,7 +44,7 @@ setup(
     description='A simple facebook api client for writing command line scripts.',
     author='Paul Carduner, Facebook',
     author_email='pcardune@fb.com',
-    url='http://github.com/facebook/fbconsole',
+    url='http://github.com/fbsamples/fbconsole',
     package_dir={'': 'src'},
     py_modules=[
         'fbconsole',

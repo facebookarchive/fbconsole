@@ -15,7 +15,7 @@ You can install fbconsole using pip:
 For many api calls, you will need to authenticate your script with Facebook.
 fbconsole makes this easy by providing an `authenticate` function.  If your
 script needs
-[extended permissions](https://developers.facebook.com/docs/reference/api/permissions/),
+[extended permissions](https://developers.facebook.com/docs/facebook-login/permissions/v2.1),
 for example to post a status update, you can specify which extended permissions
 to request with the AUTH_SCOPE setting.  For example:
 
@@ -25,7 +25,7 @@ to request with the AUTH_SCOPE setting.  For example:
     fbconsole.authenticate()
 
 You can find a list of permissions in Facebook's api documentation
-[here](https://developers.facebook.com/docs/reference/api/permissions/).
+[here](https://developers.facebook.com/docs/facebook-login/permissions/v2.1#reference).
 
 During the authentication process, a browser window will be opened where you can
 enter in your facebook login credentials.  After logging in, you can close the
@@ -121,7 +121,7 @@ completing the OAuth process automatically:
         app_secret,   # "app secret" from facebook app settings
         redirect_uri, # redirect uri specified in facebook app settings
     )
-    
+
 This method for authentication is particularly helpful, for example,
 for running cron jobs that grab data from the Graph API on a daily
 basis. If you have any trouble using the `automatic_authentication`
@@ -156,7 +156,7 @@ For issues pertaining to fbconsole only, use
 [the issue tracker on github](https://github.com/facebook/fbconsole/issues).
 For issues with the graph api or other aspects of Facebook's platform, please
 refer to [the developer docs](https://developers.facebook.com/docs/) and
-[the Facebook Platform bug tracker](http://bugs.developers.facebook.net/).
+[the Facebook Platform bug tracker](https://developers.facebook.com/bugs/trending/).
 
 
 ## License Information ##
