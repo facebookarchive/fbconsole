@@ -16,7 +16,6 @@
 
 import BaseHTTPServer
 import cookielib
-import httplib
 import anyjson as json
 import random
 import mimetypes
@@ -27,7 +26,6 @@ import time
 import types
 import urllib
 import webbrowser
-import StringIO
 import six
 from six import b
 
@@ -42,7 +40,6 @@ except ImportError:
     pass # we can live without this.
 
 from urlparse import urlparse
-from pprint import pprint
 
 try:
     from urlparse import parse_qs
@@ -201,7 +198,7 @@ class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     data['expires_at'] = 'never'
                 else:
                     data['expires_at'] = int(time.time()+int(expiration))
-            open(ACCESS_TOKEN_FILE,'w').write(json.dumps(data))
+            open(ACCESS_TOKEN_FILE, 'w').write(json.dumps(data))
             self.wfile.write(b(AUTH_SUCCESS_HTML))
         else:
             self.wfile.write(b('<html><head>'
@@ -468,7 +465,7 @@ class Batch:
                 payload['attached_files'] = ','.join(files)
             batch.append(payload)
 
-        params = {'batch':json.dumps(batch)}
+        params = {'batch': json.dumps(batch)}
         for i, f in enumerate(all_files):
             params['file%s' % i] = f
 
