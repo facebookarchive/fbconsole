@@ -15,29 +15,16 @@
 # under the License.
 
 import BaseHTTPServer
-import cookielib
 import anyjson as json
-import random
-import mimetypes
 import os
 import os.path
-import stat
+import requests
 import time
 import types
 import urllib
 import webbrowser
 import six
 from six import b
-
-poster_is_available = False
-try:
-    # try to use poster if it is available
-    import poster.streaminghttp
-    import poster.encode
-    poster.streaminghttp.register_openers()
-    poster_is_available = True
-except ImportError:
-    pass # we can live without this.
 
 from urlparse import urlparse
 
@@ -53,22 +40,8 @@ else:
     FileType = types.FileType
 
 if six.PY3:
-    from urllib.request import build_opener
-    from urllib.request import HTTPCookieProcessor
-    from urllib.request import BaseHandler
-    from urllib.request import HTTPHandler
-    from urllib.request import urlopen
-    from urllib.request import Request
     from urllib.parse import urlencode
-    from urllib.error import HTTPError
 else:
-    from urllib2 import build_opener
-    from urllib2 import HTTPCookieProcessor
-    from urllib2 import BaseHandler
-    from urllib2 import HTTPHandler
-    from urllib2 import urlopen
-    from urllib2 import HTTPError
-    from urllib2 import Request
     from urllib import urlencode
 
 APP_ID = '179745182062082'
@@ -105,78 +78,6 @@ __all__ = [
     'AUTH_SCOPE',
     'ACCESS_TOKEN_FILE',
     'SANDBOX_DOMAIN']
-
-
-class _MultipartPostHandler(BaseHandler):
-    handler_order = HTTPHandler.handler_order - 10 # needs to run first
-
-    def http_request(self, request):
-        data = request.get_data()
-        if data is not None and not isinstance(data, types.StringTypes):
-            files = []
-            params = []
-            try:
-                for key, value in data.items():
-                    if isinstance(value, FileType):
-                        files.append((key, value))
-                    else:
-                        params.append((key, value))
-            except TypeError:
-                raise TypeError("not a valid non-string sequence or mapping object")
-
-            if len(files) == 0:
-                data = urlencode(params)
-                if six.PY3:
-                    data = data.encode('utf-8')
-            else:
-                boundary, data = self.multipart_encode(params, files)
-                contenttype = 'multipart/form-data; boundary=%s' % boundary
-                request.add_unredirected_header('Content-Type', contenttype)
-
-            request.add_data(data)
-        return request
-
-    https_request = http_request
-
-    def multipart_encode(self, params, files, boundary=None, buffer=None):
-        if six.PY3:
-            boundary = boundary or b('--------------------%s---' % random.random())
-            buffer = buffer or b('')
-            for key, value in params:
-                buffer += b('--%s\r\n' % boundary)
-                buffer += b('Content-Disposition: form-data; name="%s"' % key)
-                buffer += b('\r\n\r\n' + value + '\r\n')
-            for key, fd in files:
-                file_size = os.fstat(fd.fileno())[stat.ST_SIZE]
-                filename = fd.name.split('/')[-1]
-                contenttype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-                buffer += b('--%s\r\n' % boundary)
-                buffer += b('Content-Disposition: form-data; ')
-                buffer += b('name="%s"; filename="%s"\r\n' % (key, filename))
-                buffer += b('Content-Type: %s\r\n' % contenttype)
-                fd.seek(0)
-                buffer += b('\r\n') + fd.read() + b('\r\n')
-            buffer += b('--%s--\r\n\r\n' % boundary)
-        else:
-            boundary = boundary or '--------------------%s---' % random.random()
-            buffer = buffer or ''
-            for key, value in params:
-                buffer += '--%s\r\n' % boundary
-                buffer += 'Content-Disposition: form-data; name="%s"' % key
-                buffer += '\r\n\r\n' + value + '\r\n'
-            for key, fd in files:
-                file_size = os.fstat(fd.fileno())[stat.ST_SIZE]
-                filename = fd.name.split('/')[-1]
-                contenttype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-                buffer += '--%s\r\n' % boundary
-                buffer += 'Content-Disposition: form-data; '
-                buffer += 'name="%s"; filename="%s"\r\n' % (key, filename)
-                buffer += 'Content-Type: %s\r\n' % contenttype
-                fd.seek(0)
-                buffer += '\r\n' + fd.read() + '\r\n'
-            buffer += '--%s--\r\n\r\n' % boundary
-        return boundary, buffer
-
 
 class _RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -245,21 +146,6 @@ def _handle_http_error(e):
         if error:
             return ApiException.from_json(error)
     return e
-
-def _safe_url_load(*args, **kwargs):
-    """Wrapper around urlopen that translates http errors into nicer exceptions."""
-    try:
-        return urlopen(*args, **kwargs)
-    except HTTPError, e:
-        error = _handle_http_error(e)
-    raise error
-
-def _safe_json_load(*args, **kwargs):
-    f = _safe_url_load(*args, **kwargs)
-    if six.PY3:
-        return json.loads(f.read().decode('utf-8'))
-    else:
-        return json.loads(f.read())
 
 def help():
     """Print out some helpful information"""
@@ -348,7 +234,7 @@ class Batch:
 
     If you pass in ignore_result=True when making the request, then no request
     object will be returned and the results will not be passed down from
-    facebook.  You can still use the results in other requests using the
+    facebook.  You canFile file0 has not been attached still use the results in other requests using the
     specialized syntax, but facebook won't send the results back.
 
       >>> image = open("icon.gif", "rb")
@@ -525,33 +411,32 @@ class Client:
         return endpoint+str(path)+'?'+urlencode(args)
 
     def get(self, path, params=None):
-        return _safe_json_load(self.__get_url(path, args=params))
+        response = requests.get(self.__get_url(path, args=params))
+        return response.json()
 
     def post(self, path, params=None):
         params = params or {}
-        if poster_is_available:
-            data, headers = poster.encode.multipart_encode(params)
-            request = Request(self.__get_url(path), data, headers)
-            return _safe_json_load(request)
-        else:
-            opener = build_opener(
-                HTTPCookieProcessor(cookielib.CookieJar()),
-                _MultipartPostHandler)
-            try:
-                return json.loads(opener.open(self.__get_url(path), params).read().decode('utf-8'))
-            except HTTPError, e:
-                error = _handle_http_error(e)
-            raise error
+
+        files = {}
+        non_files = {}
+
+        for key in params:
+            value = params[key]
+            if isinstance(value, FileType):
+                files[key] = value
+            else:
+                non_files[key] = value
+
+        response = requests.post(self.__get_url(path), data=non_files, files=files)
+        return response.json()
 
     def delete(self, path, params=None):
-        if not params:
-            params = {}
-        params['method'] = 'delete'
-        return post(path, params)
+        params = params or {}
+        return requests.delete(self.__get_url(path), params=params).json()
 
     def fql(self, query):
         url = self.__get_url('/fql', args={'q': query})
-        return _safe_json_load(url)['data']
+        return requests.get(url).json()['data']
 
     def graph_url(self, path, params=None):
         return self.__get_url(path, args=params)
@@ -599,14 +484,16 @@ def iter_pages(json_response):
       There are at least 5 feed stories
 
     """
-    while len(json_response.get('data','')):
+
+    while len(json_response.get('data', '')):
         for item in json_response['data']:
             yield item
         try:
             next_url = json_response['paging']['next']
+            json_response = requests.get(next_url).json()
         except KeyError:
             break
-        json_response = _safe_json_load(next_url)
+
 
 def post(path, params=None):
     """Send a POST request to the graph api.

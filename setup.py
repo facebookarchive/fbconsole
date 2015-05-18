@@ -22,6 +22,7 @@ PY3 = sys.version_info[0] == 3
 install_requires = [
     'six',
     'anyjson',
+    'requests'
     ]
 extra = {}
 if PY3:
