@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 #
-# Copyright 2010-present Facebook
+# Copyright 2014-present, Facebook, Inc.
+# All rights reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
 
 import BaseHTTPServer
 import cookielib
@@ -301,10 +293,10 @@ def _instantiate_browser(debug=False):
     browser.set_handle_referer(True)
     browser.set_handle_robots(False)
     browser.set_handle_refresh(
-        mechanize._http.HTTPRefreshProcessor(), 
+        mechanize._http.HTTPRefreshProcessor(),
         max_time=1,
     )
-    
+
     # add debug logging
     if debug:
         browser.set_debug_http(True)
@@ -812,7 +804,7 @@ def oauth_url(app_id, redirect_uri, auth_scope):
       'www.facebook.com'
       >>> sorted(parse_qsl(url.query))
       [('client_id', '179745182062082'), ('redirect_uri', 'http://127.0.0.1:8080/'), ('response_type', 'token'), ('scope', 'publish_stream')]
-      
+
 
     """
     return 'https://www.facebook.com/dialog/oauth?' + \

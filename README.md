@@ -119,4 +119,4 @@ For issues with the Graph API or other aspects of Facebook's platform, please re
 
 ## License Information ##
 
-fbconsole is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html).
+fbconsole is licensed under the license found in the LICENSE file in the root directory of this source tree.
